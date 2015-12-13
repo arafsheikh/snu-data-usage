@@ -1,0 +1,7 @@
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    tools:context="me.sheikharaf.snunetusage.StatisticsActivity">
+    <item android:id="@+id/action_opt_out" android:title="Opt out of leaderboard"
+        android:orderInCategory="100" app:showAsAction="never" />
+</menu>

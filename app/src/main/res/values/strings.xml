@@ -1,0 +1,39 @@
+<resources>
+    <string name="app_name">SNU Data Usage</string>
+
+    <string name="action_forget">Forget details</string>
+    <string name="action_help">Help</string>
+    <string name="action_share">Share app</string>
+    <string name="action_refresh">Refresh</string>
+    <string name="title_activity_help">Help</string>
+
+    <string name="credit">
+        <![CDATA[
+        a <a href="http://sheikharaf.me/about">Sheikh Araf</a> production
+        ]]></string>
+
+    <string name="action_settings">Settings</string>
+
+    <string name="help_text_head">
+ <![CDATA[
+ <p>
+ <b>Copyright © 2015 <a href="http://sheikharaf.me/about">Sheikh Araf</a></b>
+ </p>
+ <p>This app is developed independently and is in no way affiliated with Shiv Nadar University.
+ </p>
+ <p>The data usage of the ongoing week is measured from Wednesday 12:00AM and is subject to being updated by the university servers.
+ </p>
+ ]]>
+ </string>
+    <string name="help_text_contact">
+ <![CDATA[
+ <p>
+ <i>For any help or feedback regarding this app you can contact the developer via e-mail at
+ <a href="mailto:arafsheikh@gmail.com">arafsheikh@gmail.com</a>.
+ </i></p>
+ ]]>
+ </string>
+    <string name="title_activity_statistics">Weekly Statistics</string>
+
+    <string name="hello_world">Hello world!</string>
+</resources>
