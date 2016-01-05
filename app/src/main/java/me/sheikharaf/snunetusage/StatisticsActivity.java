@@ -91,7 +91,7 @@ public class StatisticsActivity extends AppCompatActivity {
         protected Void doInBackground(Void... params) {
             Document document = null;
             try {
-                URL url = new URL("http://sheikharaf.me/data/statistics.html");
+                URL url = new URL("http://arafsheikh.pythonanywhere.com/stats.html");
                 document = Jsoup.parse(url, 5000);
             } catch (MalformedURLException e) {
                 e.printStackTrace();
