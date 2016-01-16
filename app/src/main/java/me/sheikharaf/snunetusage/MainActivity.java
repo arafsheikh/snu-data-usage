@@ -222,7 +222,7 @@ public class MainActivity extends AppCompatActivity {
         protected Void doInBackground(Void... params) {
 
             try {
-                loginForm = Jsoup.connect("http://myaccount.snu.edu.in/login.php")
+                    loginForm = Jsoup.connect("http://myaccount.snu.edu.in/login.php")
                         .method(Connection.Method.GET)
                         .execute();
             } catch (IOException e) {
@@ -320,11 +320,6 @@ public class MainActivity extends AppCompatActivity {
                 setRefreshActionButtonState(menu_item_refresh, false);
 
             } catch (IndexOutOfBoundsException e) {
-                SharedPreferences sharedPreferences = getSharedPreferences("MYPREFERENCES", Context.MODE_PRIVATE);
-                SharedPreferences.Editor editor = sharedPreferences.edit();
-                editor.remove("username");
-                editor.remove("password");
-                editor.apply();
 
                 Toast.makeText(getApplicationContext(), "Network communication issue. Try again later", Toast.LENGTH_LONG).show();
                 setRefreshActionButtonState(menu_item_refresh, false);
