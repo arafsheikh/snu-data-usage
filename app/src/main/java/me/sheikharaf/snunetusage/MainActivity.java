@@ -15,6 +15,7 @@ import android.support.v7.app.AppCompatActivity;
 import android.support.v7.app.NotificationCompat;
 import android.text.Html;
 import android.text.method.LinkMovementMethod;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
@@ -23,6 +24,13 @@ import android.widget.Toast;
 
 import com.google.analytics.tracking.android.EasyTracker;
 import com.google.analytics.tracking.android.MapBuilder;
+import com.squareup.okhttp.Call;
+import com.squareup.okhttp.Callback;
+import com.squareup.okhttp.FormEncodingBuilder;
+import com.squareup.okhttp.OkHttpClient;
+import com.squareup.okhttp.Request;
+import com.squareup.okhttp.RequestBody;
+import com.squareup.okhttp.Response;
 
 import org.jsoup.Connection;
 import org.jsoup.Jsoup;
@@ -36,13 +44,14 @@ import java.text.SimpleDateFormat;
 import java.util.Calendar;
 
 public class MainActivity extends AppCompatActivity {
-
-    String NetId, pass;
-    Document document, usage_page;
-    Connection.Response loginForm = null;
-    Connection.Response usage_login = null;
-    EasyTracker easyTracker = EasyTracker.getInstance(this);
-    MenuItem menu_item_refresh = null;
+    private static final String TAG = "MainActivity";
+    private String NetId, pass;
+    //private Document document;
+    private Connection.Response loginForm = null;
+    //private Connection.Response usage_login = null;
+    private EasyTracker easyTracker = EasyTracker.getInstance(this);
+    private MenuItem menu_item_refresh = null;
+    private int retry_time = 5000;  // Retry after a failed login attempt
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -174,7 +183,7 @@ public class MainActivity extends AppCompatActivity {
         if (id == R.id.action_refresh) {
             menu_item_refresh = item;
             setRefreshActionButtonState(menu_item_refresh, true);
-            new FetchPage().execute();
+            logoutLoginRefresh(NetId, pass);
             easyTracker.send(MapBuilder
                     .createEvent("ui_action",     // Event category (required)
                             "refresh_menu",  // Event action (required)
@@ -208,23 +217,17 @@ public class MainActivity extends AppCompatActivity {
         @Override
         protected void onPreExecute() {
             super.onPreExecute();
-            // Set progressdialog title
-            //mProgressDialog.setTitle("Android Jsoup ListView Tutorial");
-            // Set progressdialog message
-            //mProgressDialog.setMessage("Loading...");
-            //mProgressDialog.setIndeterminate(false);
-            // Show progressdialog
-            //mProgressDialog.show();
             setRefreshActionButtonState(menu_item_refresh, true);
         }
 
         @Override
         protected Void doInBackground(Void... params) {
-
+            loginForm = null;
+/*
             try {
-                    loginForm = Jsoup.connect("http://myaccount.snu.edu.in/login.php")
-                        .method(Connection.Method.GET)
-                        .execute();
+                loginForm = Jsoup.connect("http://myaccount.snu.edu.in/login.php")
+                    .method(Connection.Method.GET)
+                    .execute();
             } catch (IOException e) {
                 e.printStackTrace();
             }
@@ -240,6 +243,17 @@ public class MainActivity extends AppCompatActivity {
             } catch (IOException | RuntimeException e) {
                 e.printStackTrace();
             }
+*/
+            try {
+                loginForm = Jsoup.connect("http://myaccount.snu.edu.in/loginSubmit.php")
+                        .method(Connection.Method.POST)
+                        .data("snuNetId", NetId)
+                        .data("password", pass)
+                        .data("submit", "Login")
+                        .execute();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
             return null;
         }
 
@@ -250,14 +264,24 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private class FetchResult extends AsyncTask<Void, Void, Void> {
+        private Document usage_page;
 
         @Override
         protected Void doInBackground(Void... params) {
-            try {
+/*            try {
                 usage_login = Jsoup.connect("http://myaccount.snu.edu.in/myAccountInfo.php")
                         .method(Connection.Method.GET)
                         .execute();
             } catch (IOException e) {
+                e.printStackTrace();
+            }
+*/
+
+            // While refreshing the server may not respond fast enough
+            // thereby resulting in redirect to the internet login page.
+            try {
+                Thread.sleep(300);
+            } catch (InterruptedException e) {
                 e.printStackTrace();
             }
 
@@ -283,6 +307,7 @@ public class MainActivity extends AppCompatActivity {
             } catch (IOException | RuntimeException e) {
                 e.printStackTrace();
             }
+
             return null;
         }
 
@@ -319,14 +344,8 @@ public class MainActivity extends AppCompatActivity {
                 });
                 setRefreshActionButtonState(menu_item_refresh, false);
 
-            } catch (IndexOutOfBoundsException e) {
-
-                Toast.makeText(getApplicationContext(), "Network communication issue. Try again later", Toast.LENGTH_LONG).show();
-                setRefreshActionButtonState(menu_item_refresh, false);
-                Intent backToLogin = new Intent(getApplicationContext(), LoginActivity.class);
-                backToLogin.setFlags(Intent.FLAG_ACTIVITY_NO_HISTORY);
-                startActivity(backToLogin);
-            } catch (NullPointerException e) {
+            } catch (IndexOutOfBoundsException | NullPointerException e) {
+                e.printStackTrace();
                 Toast.makeText(getApplicationContext(), "Network communication issue. Try again later", Toast.LENGTH_LONG).show();
                 setRefreshActionButtonState(menu_item_refresh, false);
             }
@@ -369,6 +388,104 @@ public class MainActivity extends AppCompatActivity {
                 }
             }, 5000);
         }
+    }
+
+    /**
+     * Send POST request to the server to log the user in or out.
+     *
+     * @param mode  Mode is used by the server script to differentiate between login and logout.
+     *              191: Login
+     *              193: Logout
+     * @param username The username of user
+     * @param password The password of user
+     * @param callback The Callback
+     * @return Call object
+     * @throws IOException
+     */
+    Call post(String mode, String username, String password, Callback callback) throws IOException {
+        OkHttpClient client = new OkHttpClient();
+        RequestBody formBody = new FormEncodingBuilder()
+                .add("mode", mode)
+                .add("username", username + "@snu.in")
+                .add("password", password)
+                .build();
+        Request request = new Request.Builder()
+                .url("http://192.168.50.1/24online/servlet/E24onlineHTTPClient")
+                .post(formBody)
+                .build();
+        Call call = client.newCall(request);
+        call.enqueue(callback);
+        return call;
+    }
+
+    /**
+     * Logs the user out and then logs them back in and executes the FetchPage AsyncTask.
+     * Logging-out and then logging-in forces the server to start a new session.
+     */
+    public void logoutLoginRefresh(final String username, final String password) {
+        try {
+            post("193", username, password, new Callback() {
+                @Override
+                public void onFailure(Request request, IOException e) {
+                    Log.e(TAG, "Logout failed with " + e.toString());
+                    login(username, password);
+                }
+                @Override
+                public void onResponse(Response response) throws IOException {
+                    Log.i(TAG, "Logout: " + response.toString());
+                    login(username, password);
+                }
+            });
+        } catch (IOException e) {
+            Log.e(TAG, "HTTP POST IOError: " + e.toString());
+        }
+    }
+
+    /**
+     * Logs the user in.
+     */
+    private void login(final String username, final String password) {
+        try {
+            post("191", username, password, new Callback() {
+                @Override
+                public void onFailure(Request request, IOException e) {
+                    Log.e(TAG, "Login failed with " + e.toString());
+                    onLoginFailure(username, password);
+                }
+                @Override
+                public void onResponse(Response response) throws IOException {
+                    Log.i(TAG, "Login: " + response.toString());
+
+                    // Run from UI thread to interact with UI
+                    runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            new FetchResult().execute();
+                        }
+                    });
+                }
+            });
+        } catch (IOException e) {
+            Log.e(TAG, "HTTP POST IOError: " + e.toString());
+        }
+    }
+
+    /**
+     * If login failed retry 5 times over a period of 5.25 minutes.
+     */
+    private void onLoginFailure(final String username, final String password) {
+        if (retry_time > 160) {
+            retry_time = 0;
+            return;
+        }
+        Handler handler = new Handler();
+        handler.postDelayed(new Runnable() {
+            @Override
+            public void run() {
+                logoutLoginRefresh(username, password);
+            }
+        }, retry_time);
+        retry_time *= 2;    // Increase retry time for a better chance of success
     }
 
     public void setRefreshActionButtonState(MenuItem refreshItem, final boolean refreshing) {
