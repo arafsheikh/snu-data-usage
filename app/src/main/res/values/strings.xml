@@ -7,6 +7,13 @@
     <string name="action_refresh">Refresh</string>
     <string name="title_activity_help">Help</string>
 
+    <string name="update_title">App updated</string>
+    <string name="update_body">
+        - Refresh button now actually refreshes the data usage.
+            (Note: The data is refreshed for this device only)
+        - Fixed bug that sometimes caused the app to reset.
+    </string>
+
     <string name="credit">
         <![CDATA[
         a <a href="http://sheikharaf.me/about">Sheikh Araf</a> production

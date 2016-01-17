@@ -6,6 +6,7 @@ import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.content.pm.PackageManager;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
@@ -57,6 +58,29 @@ public class MainActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+
+        // Create "What's new" alert dialog after update.
+        try {
+            final int version_code = this.getPackageManager().getPackageInfo(this.getPackageName(), 0).versionCode;
+            if(getSharedPreferences("MYPREFERENCES", Context.MODE_PRIVATE).getInt("version_code", 0) < version_code) {
+                final AlertDialog.Builder builder = new AlertDialog.Builder(this)
+                        .setTitle(R.string.update_title)
+                        .setMessage(R.string.update_body)
+                        .setPositiveButton(android.R.string.ok, new DialogInterface.OnClickListener() {
+                            @Override
+                            public void onClick(DialogInterface dialog, int which) {
+                                // Mark this version as read
+                                SharedPreferences.Editor editor = getSharedPreferences("MYPREFERENCES", Context.MODE_PRIVATE).edit();
+                                editor.putInt("version_code", version_code);
+                                editor.apply();
+                                dialog.dismiss();
+                            }
+                        });
+                builder.create().show();
+            }
+        } catch (PackageManager.NameNotFoundException e) {
+            e.printStackTrace();
+        }
 
         setRefreshActionButtonState(menu_item_refresh, true);
 
@@ -347,6 +371,12 @@ public class MainActivity extends AppCompatActivity {
             } catch (IndexOutOfBoundsException | NullPointerException e) {
                 e.printStackTrace();
                 Toast.makeText(getApplicationContext(), "Network communication issue. Try again later", Toast.LENGTH_LONG).show();
+                easyTracker.send(MapBuilder
+                        .createEvent("error",     // Event category (required)
+                                "network",  // Event action (required)
+                                "communication error",   // Event label
+                                null)            // Event value
+                        .build());
                 setRefreshActionButtonState(menu_item_refresh, false);
             }
         }
